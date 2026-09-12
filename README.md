@@ -1,6 +1,6 @@
-# Ruta Infinita
+# Rubín en Guadalajara
 
-Juego de plataformas 2D sin dependencias. Abre `index.html` en un navegador o publica el repositorio con GitHub Pages.
+Juego de plataformas 2D sin dependencias protagonizado por Rubín. Explora una Guadalajara infinita y recarga su energía mientras recorres la ciudad.
 
 ## Controles
 
@@ -15,9 +15,10 @@ También hay controles táctiles para izquierda, salto y derecha.
 
 ## Sistema de juego
 
-- Cinco capas con parallax: cielo, edificios, arbustos, suelo y objetos jugables.
-- Puntos por distancia y 100 puntos por cada moneda.
-- Obstáculos que terminan la partida si no se saltan.
+- Cinco capas con parallax: cielo, ciudad distante, monumentos, jacarandas, paseo y objetos jugables.
+- Panorama original en estilo 3D juguete de la Catedral Metropolitana, Hospicio Cabañas, La Minerva y los Arcos del Milenio.
+- Puntos por distancia y 100 puntos por cada célula de energía.
+- Macetas de agave y estuches de mariachi como obstáculos; un salto tiene margen de seguridad para que sea justo.
 - Puntuación máxima guardada localmente en el navegador.
 - Sonidos de salto, moneda, pausa y golpe generados en el navegador; no requiere descargar ni licenciar efectos externos.
 
