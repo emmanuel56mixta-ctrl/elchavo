@@ -17,6 +17,7 @@ También hay controles táctiles para izquierda, salto y derecha.
 
 - Cinco capas con parallax: cielo, ciudad distante, monumentos, jacarandas, paseo y objetos jugables.
 - Panorama original en estilo 3D juguete de la Catedral Metropolitana, Hospicio Cabañas, La Minerva y los Arcos del Milenio.
+- Nubes PNG realistas y capas panorámicas solapadas, para que la ciudad se desplace de forma continua sin cortes visibles.
 - Puntos por distancia y 100 puntos por cada célula de energía.
 - Macetas de agave y estuches de mariachi como obstáculos; un salto tiene margen de seguridad para que sea justo.
 - Puntuación máxima guardada localmente en el navegador.

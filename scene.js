@@ -11,8 +11,13 @@ const PLAYER_X = 218;
 const keys = new Set();
 const images = {
   panorama: loadImage("assets/guadalajara-panorama.png"),
+  clouds: loadImage("assets/gdl-clouds.png"),
   rubin: loadImage("assets/rubin-player.png")
 };
+const PANORAMA_STEP = 870;
+const PANORAMA_TILE_WIDTH = 1120;
+let panoramaTile;
+let cloudTile;
 
 const state = {
   cameraX: 0, speed: 150, autoRun: true, paused: false, muted: false,
@@ -68,20 +73,41 @@ function circle(x, y, radius, fill, stroke = OUTLINE, lineWidth = 3) {
   if (stroke) { ctx.lineWidth = lineWidth; ctx.strokeStyle = stroke; ctx.stroke(); }
 }
 
-// Layer 1: blue tapatío sky and clouds.
+// Layer 1: blue tapatío sky.
 function drawSky() {
   const sky = ctx.createLinearGradient(0, 0, 0, VIEW.height);
   sky.addColorStop(0, "#57b8ef"); sky.addColorStop(0.62, "#b9e8fa"); sky.addColorStop(1, "#f7dfae");
   ctx.fillStyle = sky; ctx.fillRect(0, 0, VIEW.width, VIEW.height);
-  loopTiles(270, 0.035, (x, index) => drawCloud(x + 24, 54 + randomAt(index + 11) * 112, 0.68 + randomAt(index + 12) * 0.48));
 }
-function drawCloud(x, y, scale) {
-  ctx.save(); ctx.globalAlpha = 0.88;
-  for (const [offsetX, offsetY, radius] of [[0, 13, 17], [27, 1, 26], [58, 14, 20], [82, 19, 13]]) {
-    circle(x + offsetX * scale, y + offsetY * scale, radius * scale, "#fffdf5", "#d9edf4", 2 * scale);
+
+function makeFeatheredTile(image, kind) {
+  if (!image.complete || image.naturalWidth === 0) return null;
+  const tile = document.createElement("canvas");
+  tile.width = PANORAMA_TILE_WIDTH;
+  tile.height = kind === "cloud" ? 300 : VIEW.groundY;
+  const tileCtx = tile.getContext("2d");
+  if (kind === "cloud") {
+    tileCtx.drawImage(image, -50, -78, 1220, 687);
+  } else {
+    tileCtx.drawImage(image, 10, -20, 1100, 619);
   }
-  roundedRect(x - 3 * scale, y + 16 * scale, 98 * scale, 22 * scale, 12 * scale, "#fffdf5", "#d9edf4", 2 * scale);
-  ctx.restore();
+  tileCtx.globalCompositeOperation = "destination-in";
+  const fade = tileCtx.createLinearGradient(0, 0, tile.width, 0);
+  fade.addColorStop(0, "rgba(0, 0, 0, 0)");
+  // The fully opaque span and fade widths match the 250px tile overlap.
+  fade.addColorStop(0.223, "rgba(0, 0, 0, 1)");
+  fade.addColorStop(0.777, "rgba(0, 0, 0, 1)");
+  fade.addColorStop(1, "rgba(0, 0, 0, 0)");
+  tileCtx.fillStyle = fade;
+  tileCtx.fillRect(0, 0, tile.width, tile.height);
+  return tile;
+}
+
+// Layer 2: soft cloud PNGs, feathered so their scroll never reveals a seam.
+function drawCloudLayer() {
+  cloudTile ||= makeFeatheredTile(images.clouds, "cloud");
+  if (!cloudTile) return;
+  loopTiles(PANORAMA_STEP, 0.055, (x) => ctx.drawImage(cloudTile, x - 125, 0));
 }
 
 // Layer 2: far hills and city blocks.
@@ -101,27 +127,12 @@ function drawDistantCity() {
   });
 }
 
-// Layer 3: generated Guadalajara panorama with the Cathedral, Hospicio Cabañas,
+// Layer 4: generated Guadalajara panorama with the Cathedral, Hospicio Cabañas,
 // La Minerva and Arcos del Milenio in Rubín's friendly 3D visual world.
 function drawLandmarks() {
-  if (!images.panorama.complete || images.panorama.naturalWidth === 0) return;
-  loopTiles(900, 0.18, (x) => {
-    ctx.save(); ctx.beginPath(); ctx.rect(0, 58, VIEW.width, VIEW.groundY - 58); ctx.clip();
-    ctx.drawImage(images.panorama, x, -12, 900, 506); ctx.restore();
-  });
-}
-
-// Layer 4: jacarandas in front of the city.
-function drawForegroundTrees() {
-  loopTiles(190, 0.43, (x, index) => {
-    const trunk = x + 38 + randomAt(index + 130) * 72;
-    const y = VIEW.groundY - 18;
-    ctx.strokeStyle = "#754d37"; ctx.lineWidth = 10; ctx.beginPath(); ctx.moveTo(trunk, y); ctx.lineTo(trunk + 6, y - 68); ctx.stroke();
-    const tone = randomAt(index + 131) > 0.5 ? "#9c69c3" : "#b879d1";
-    circle(trunk - 21, y - 78, 31, tone, "#68477d", 2);
-    circle(trunk + 20, y - 91, 35, tone, "#68477d", 2);
-    circle(trunk + 47, y - 66, 28, "#b67bd2", "#68477d", 2);
-  });
+  panoramaTile ||= makeFeatheredTile(images.panorama, "city");
+  if (!panoramaTile) return;
+  loopTiles(PANORAMA_STEP, 0.18, (x) => ctx.drawImage(panoramaTile, x - 125, 0));
 }
 
 // Layer 5: tiled paseo repeated forever.
@@ -270,7 +281,7 @@ function update(delta) {
   state.frameClock += delta; collectCells(); checkCollision();
   state.score = Math.max(state.score, Math.floor(state.cameraX / 4) + state.cells * 100);
 }
-function render() { drawSky(); drawDistantCity(); drawLandmarks(); drawForegroundTrees(); drawGround(); drawObjects(); drawPlayer(); drawHud(); }
+function render() { drawSky(); drawCloudLayer(); drawDistantCity(); drawLandmarks(); drawGround(); drawObjects(); drawPlayer(); drawHud(); }
 function jump() {
   if (!state.paused && !state.gameOver && state.player.feetY >= VIEW.groundY - 0.5) {
     state.player.velocityY = -560; state.player.invincible = 1.25; state.player.crouching = false; sfxJump();
