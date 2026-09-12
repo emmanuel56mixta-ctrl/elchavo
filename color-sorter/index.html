@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rubín: Esferas de Color</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #7252b7, #231b55 72%);
+        color: #fff;
+      }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; box-sizing: border-box; }
+      main { width: min(100%, 1000px); }
+      .game-shell { position: relative; }
+      canvas { display: block; width: 100%; height: auto; border-radius: 22px; box-shadow: 0 22px 55px rgba(13, 5, 44, .42); background: #7555b0; }
+      .help { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 4px 0; }
+      p { margin: 0; font-size: 14px; }
+      .controls { display: flex; gap: 8px; align-items: center; }
+      button { border: 0; min-width: 44px; min-height: 44px; border-radius: 999px; padding: 8px 15px; background: #ffbd1b; color: #24325f; cursor: pointer; font: 800 16px system-ui; box-shadow: inset 0 -3px 0 rgba(155, 91, 0, .28); }
+      button:hover { background: #ffe26f; }
+      button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+      .action { padding-inline: 19px; }
+      @media (max-width: 640px) { body { padding: 12px; } .help { justify-content: center; } p { text-align: center; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="game-shell">
+        <canvas id="game" width="960" height="540" tabindex="0" aria-label="Rubín: juego para recoger esferas de colores y colocarlas en sus recipientes."></canvas>
+      </div>
+      <div class="help">
+        <p>← → mover · ↑ ↓ girar cabeza · Espacio tomar / colocar · Tab pausa · M sonido</p>
+        <div class="controls" aria-label="Controles táctiles">
+          <button type="button" data-key="ArrowLeft" aria-label="Mover a la izquierda">←</button>
+          <button type="button" data-key="ArrowUp" aria-label="Mirar arriba">↑</button>
+          <button class="action" type="button" data-action="grab" aria-label="Tomar o colocar esfera">●</button>
+          <button type="button" data-key="ArrowRight" aria-label="Mover a la derecha">→</button>
+          <button id="pause" type="button" aria-pressed="false">Pausar</button>
+        </div>
+      </div>
+    </main>
+    <script src="game.js"></script>
+  </body>
+</html>

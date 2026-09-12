@@ -24,3 +24,7 @@ También hay controles táctiles para izquierda, salto y derecha.
 - Sonidos de salto, moneda, pausa y golpe generados en el navegador; no requiere descargar ni licenciar efectos externos.
 
 El mapa no se almacena completo. Cada tramo usa la misma semilla en `randomAt()`, por lo que los edificios, monedas y obstáculos se recrean al entrar en pantalla sin aumentar la memoria con el tiempo.
+
+## Otro juego: Rubín · Esferas de Color
+
+Abre [`color-sorter/`](color-sorter/) para jugar una misión de clasificación: mueve a Rubín con las flechas, toma una esfera con `Espacio` y colócala en el recipiente del mismo color. `↑` y `↓` hacen que mire y gire la cabeza; sus brazos, expresiones y rueda se animan según la acción.
