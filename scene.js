@@ -378,14 +378,33 @@ function collectCoins() {
 
 function checkCollision() {
   if (state.cameraX < CHUNK_WIDTH) return;
-  const playerWorldX = state.cameraX + PLAYER_X + 58;
-  const chunk = Math.floor(playerWorldX / CHUNK_WIDTH);
+  // A jump stays protected for its full arc and a small landing grace period.
+  // That lets the character clear the thick visual outline of a rock even
+  // when the player presses jump shortly before reaching it.
+  if (state.player.invincible > 0 || state.player.feetY < VIEW.groundY - 0.5) return;
+  const player = {
+    left: state.cameraX + PLAYER_X + 29,
+    right: state.cameraX + PLAYER_X + 83,
+    top: state.player.feetY - (state.player.crouching ? 93 : 137),
+    bottom: state.player.feetY - 12
+  };
+  const chunk = Math.floor((player.left + player.right) / 2 / CHUNK_WIDTH);
   for (let index = chunk - 1; index <= chunk + 1; index += 1) {
     const obstacle = getChunkItems(index).obstacle;
     if (!obstacle?.solid) continue;
-    const overlapsX = playerWorldX > obstacle.x - 10 && playerWorldX < obstacle.x + obstacle.width + 12;
-    const tooLow = state.player.feetY > VIEW.groundY - obstacle.height - 12;
-    if (overlapsX && tooLow) return endGame();
+
+    // The visible art has wide outlines and shadows, so the collision area is
+    // deliberately inside the drawing. This removes invisible edge hits.
+    const inset = obstacle.kind === "rock" ? 14 : 6;
+    const obstacleBox = {
+      left: obstacle.x + inset,
+      right: obstacle.x + obstacle.width - inset,
+      top: VIEW.groundY - obstacle.height + 7,
+      bottom: VIEW.groundY - 8
+    };
+    const overlaps = player.left < obstacleBox.right && player.right > obstacleBox.left && player.top < obstacleBox.bottom && player.bottom > obstacleBox.top;
+
+    if (overlaps) return endGame();
   }
 }
 
@@ -414,6 +433,7 @@ function update(delta) {
 
   state.player.velocityY += 1250 * delta;
   state.player.feetY += state.player.velocityY * delta;
+  state.player.invincible = Math.max(0, state.player.invincible - delta);
   if (state.player.feetY > VIEW.groundY) {
     state.player.feetY = VIEW.groundY;
     state.player.velocityY = 0;
@@ -437,6 +457,7 @@ function render() {
 function jump() {
   if (!state.paused && !state.gameOver && state.player.feetY >= VIEW.groundY - 0.5) {
     state.player.velocityY = -560;
+    state.player.invincible = 1.25;
     state.player.crouching = false;
     sfxJump();
   }
