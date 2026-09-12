@@ -12,6 +12,14 @@ const COLORS = [
 const TARGET_X = [130, 350, 610, 830];
 const keys = new Set();
 let audioContext;
+let rubinSprite = null;
+
+// La ilustración proporcionada por el usuario se convierte a una silueta
+// transparente. Así Rubín mantiene exactamente sus proporciones 2D originales
+// sobre cualquier fondo del juego.
+const rubinReference = new Image();
+rubinReference.addEventListener("load", () => { rubinSprite = buildRubinSprite(rubinReference); });
+rubinReference.src = "assets/rubin-reference.png";
 
 const state = {
   level: 1,
@@ -72,6 +80,69 @@ function circle(x, y, radius, fill, stroke = null, lineWidth = 0) {
   ctx.fillStyle = fill;
   ctx.fill();
   if (stroke) { ctx.lineWidth = lineWidth; ctx.strokeStyle = stroke; ctx.stroke(); }
+}
+
+function buildRubinSprite(image) {
+  const source = document.createElement("canvas");
+  source.width = image.naturalWidth;
+  source.height = image.naturalHeight;
+  const sourceCtx = source.getContext("2d", { willReadFrequently: true });
+  sourceCtx.drawImage(image, 0, 0);
+  const frame = sourceCtx.getImageData(0, 0, source.width, source.height);
+  const { data } = frame;
+  const count = source.width * source.height;
+  const visited = new Uint8Array(count);
+  const queue = new Int32Array(count);
+  let write = 0;
+  let read = 0;
+
+  // Solo se borra el morado conectado al borde. El morado de la sonrisa queda
+  // protegido dentro de la figura amarilla.
+  const isPurpleBackdrop = (index) => {
+    const offset = index * 4;
+    const red = data[offset];
+    const green = data[offset + 1];
+    const blue = data[offset + 2];
+    return data[offset + 3] > 0 && red > green + 12 && blue > green + 8 && red + blue - green * 2 > 42;
+  };
+  const add = (index) => {
+    if (!visited[index] && isPurpleBackdrop(index)) { visited[index] = 1; queue[write++] = index; }
+  };
+  for (let x = 0; x < source.width; x += 1) { add(x); add((source.height - 1) * source.width + x); }
+  for (let y = 0; y < source.height; y += 1) { add(y * source.width); add(y * source.width + source.width - 1); }
+  while (read < write) {
+    const index = queue[read++];
+    const x = index % source.width;
+    const y = Math.floor(index / source.width);
+    if (x > 0) add(index - 1);
+    if (x < source.width - 1) add(index + 1);
+    if (y > 0) add(index - source.width);
+    if (y < source.height - 1) add(index + source.width);
+  }
+  for (let index = 0; index < count; index += 1) {
+    const y = Math.floor(index / source.width);
+    if (visited[index] || y >= 219) data[index * 4 + 3] = 0;
+  }
+  sourceCtx.putImageData(frame, 0, 0);
+
+  let left = source.width;
+  let right = 0;
+  let top = source.height;
+  let bottom = 0;
+  for (let y = 0; y < source.height; y += 1) {
+    for (let x = 0; x < source.width; x += 1) {
+      if (data[(y * source.width + x) * 4 + 3] === 0) continue;
+      left = Math.min(left, x); right = Math.max(right, x);
+      top = Math.min(top, y); bottom = Math.max(bottom, y);
+    }
+  }
+  if (right <= left || bottom <= top) return null;
+  const margin = 3;
+  const crop = document.createElement("canvas");
+  crop.width = right - left + 1 + margin * 2;
+  crop.height = bottom - top + 1 + margin * 2;
+  crop.getContext("2d").drawImage(source, left - margin, top - margin, crop.width, crop.height, 0, 0, crop.width, crop.height);
+  return crop;
 }
 
 function shuffled(values) {
@@ -245,6 +316,17 @@ function drawRobot() {
   const baseY = VIEW.floorY;
   const walking = keys.has("ArrowLeft") || keys.has("ArrowRight");
   const bob = walking ? Math.sin(performance.now() * 0.015) * 3 : Math.sin(performance.now() * 0.0024) * 1.5;
+  if (rubinSprite) {
+    drawReferenceRobot(robot.x, baseY + bob, robot.headAngle);
+    if (state.carrying) {
+      const target = nearestTarget();
+      const side = target && target.x < robot.x ? -1 : 1;
+      state.carrying.x = robot.x + side * 106;
+      state.carrying.y = baseY - 157 + bob;
+      drawSphere(state.carrying);
+    }
+    return;
+  }
   const shoulderY = baseY - 132 + bob;
   const armWiggle = walking ? Math.sin(performance.now() * 0.014) * 0.18 : 0;
   const target = state.carrying ? nearestTarget() : nearestSphere();
@@ -292,6 +374,27 @@ function drawRobot() {
     state.carrying.y = baseY - 186 + bob;
     drawSphere(state.carrying);
   }
+}
+
+function drawReferenceRobot(x, baseY, headAngle) {
+  // La lámina conserva todos los detalles del modelo de referencia: cabeza,
+  // barra, resortes, pinzas y el torso original. Solo se balancea ligeramente
+  // cuando se usan las teclas para que siga teniendo respuesta física.
+  const scale = 1.2;
+  const width = rubinSprite.width * scale;
+  const height = rubinSprite.height * scale;
+  ctx.save();
+  ctx.translate(x, baseY - 77);
+  ctx.rotate(headAngle * 0.18);
+  ctx.drawImage(rubinSprite, -width / 2, -height, width, height);
+  ctx.restore();
+
+  // El recorte de la referencia termina justo antes de la rueda; se completa
+  // aquí para que nunca quede cortada por el borde de la captura original.
+  ctx.save();
+  ctx.translate(x, baseY);
+  drawRobotWheel();
+  ctx.restore();
 }
 
 function drawRobotWheel() {
